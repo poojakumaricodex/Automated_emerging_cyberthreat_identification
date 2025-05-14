@@ -84,9 +84,10 @@ jupyter notebook
 Open the notebook and run the cells to execute the pipeline.
 
 Screenshots
-![Uploading Screenshot 2025-05-14 210348.png…]()
-![Screenshot 2025-05-14 210403](https://github.com/user-attachments/assets/b712ed42-3c77-4138-ad65-6b50788280a3)
-![Screenshot 2025-05-14 210416](https://github.com/user-attachments/assets/71cdd72d-2db1-41fc-9160-005e323be683)
+![Screenshot 2025-05-14 210348](https://github.com/user-attachments/assets/1d12eac7-067d-4266-afb6-d4ebace38aeb)
+![Screenshot 2025-05-14 210403](https://github.com/user-attachments/assets/4db24a81-2b1a-4306-99b8-de38239a4196)
+![Screenshot 2025-05-14 210416](https://github.com/user-attachments/assets/53f50453-613e-47db-8d5a-39a7e1623d45)
+
 
 
 
