@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 {% load static %}
 <html lang="en">
+<body>
 <head>
     <meta charset="UTF-8">
-    <title>Service Provider</title>
+    <title>Remote User</title>
 <link href="https://fonts.googleapis.com/css?family=Russo+One" rel="stylesheet">
 <style>
-    body{background: url("{% static 'bg.jpg' %}");
+      body{background: url("{% static 'bg.jpg' %}");
 	background-size:cover;
 	font-family: 'Russo One', sans-serif;
 	background-color: #000000;
@@ -25,7 +26,7 @@
   text-align: center;
   padding: 14px 16px;
   text-decoration: none;
-  font-size: 12px;
+  font-size: 17px;
 }
 
 .topnav a:hover {
@@ -43,23 +44,22 @@
 <body>
 
 <h1 align="center" class="style1">Automated Emerging Cyber Threat Identification and Profiling Based on Natural Language Processing</h1>
+<div class="tab-content tab-space">
+            <div class="tab-pane active" id="preview-alerts">
 
-<div  class="topnav">
-
-    <a href="{% url 'train_model' %}">Browse Datasets and Train & Test Data Sets </a>
-    <a href="{% url 'likeschart' 'bar' %}">View  Trained and Tested Accuracy in Bar Chart </a>
-    <a href="{% url 'charts1' 'line' %}"> View Trained and Tested Accuracy Results </a>
-    <a  href="{% url 'View_Predicted_Cyber_Threat_Identification_Type' %}">View Prediction Of Cyber Threat Identification Type</a>
-    <a href="{% url 'View_Predicted_Cyber_Threat_Identification_Type_Ratio' %}">View Cyber Threat Identification Type Ratio </a>
-    <a href="{% url 'Download_Predicted_DataSets' %}">Download Predicted Data Sets</a>
-    <a href="{% url 'charts' 'line' %}">View Cyber Threat Identification Type Ratio Results </a>
-    <a href="{% url 'View_Remote_Users' %}">View All Remote Users</a>
-    <a href="{% url 'index'  %}">Logout</a>
-
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,500,500,200" rel="stylesheet" />
+        <script src="https://kit.fontawesome.com/42d5adcbca.js" crossorigin="anonymous"></script>
+                <link href="https://unpkg.com/soft-ui-design-system@1.0.1/assets/css/soft-design-system.min.css" rel="stylesheet" /><div class="container py-5">
+    <div class="alert alert-success text-white font-weight-bold" role="alert">
+        <a  href="{% url 'Predict_Cyber_Threat_Identification_Type' %}">PREDICT CYBER THREAT IDENTIFICATION TYPE</a>||
+         <a href="{% url 'ViewYourProfile' %}">VIEW YOUR PROFILE</a>||
+         <a href="{% url 'index' %}">LOGOUT</a>
+    </div>
+  </div>
 </div>
 
 <div class="mainholder">
-{% block researchblock %}
+{% block userblock %}
 {% endblock %}
 </div>
 </body>
