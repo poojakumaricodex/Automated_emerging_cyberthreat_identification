@@ -1,13 +1,18 @@
+
+from django.db.models import  Count, Avg
+from django.shortcuts import render, redirect
 from django.db.models import Count
 from django.db.models import Q
-from django.shortcuts import render, redirect, get_object_or_404
+import datetime
+import xlwt
+from django.http import HttpResponse
+
 
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 from sklearn.metrics import accuracy_score
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import VotingClassifier
 
 from nltk.tokenize import word_tokenize
 import string
@@ -19,230 +24,236 @@ from nltk.corpus import stopwords
 # Create your views here.
 from Remote_User.models import ClientRegister_Model,cyber_threat_identification,detection_ratio,detection_accuracy
 
-def login(request):
 
-
-    if request.method == "POST" and 'submit1' in request.POST:
-
-        username = request.POST.get('username')
+def serviceproviderlogin(request):
+    if request.method  == "POST":
+        admin = request.POST.get('username')
         password = request.POST.get('password')
-        try:
-            enter = ClientRegister_Model.objects.get(username=username,password=password)
-            request.session["userid"] = enter.id
+        if admin == "Admin" and password =="Admin":
+            detection_accuracy.objects.all().delete()
+            return redirect('View_Remote_Users')
 
-            return redirect('ViewYourProfile')
-        except:
-            pass
+    return render(request,'SProvider/serviceproviderlogin.html')
 
-    return render(request,'RUser/login.html')
+def View_Predicted_Cyber_Threat_Identification_Type_Ratio(request):
+    detection_ratio.objects.all().delete()
+    ratio = ""
+    kword = 'Cyber Threat Found'
+    print(kword)
+    obj = cyber_threat_identification.objects.all().filter(Q(Prediction=kword))
+    obj1 = cyber_threat_identification.objects.all()
+    count = obj.count();
+    count1 = obj1.count();
+    ratio = (count / count1) * 100
+    if ratio != 0:
+        detection_ratio.objects.create(names=kword, ratio=ratio)
 
-def index(request):
-    return render(request, 'RUser/index.html')
-
-def Add_DataSet_Details(request):
-
-    return render(request, 'RUser/Add_DataSet_Details.html', {"excel_data": ''})
-
-
-def Register1(request):
-
-    if request.method == "POST":
-        username = request.POST.get('username')
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-        phoneno = request.POST.get('phoneno')
-        country = request.POST.get('country')
-        state = request.POST.get('state')
-        city = request.POST.get('city')
-        address = request.POST.get('address')
-        gender = request.POST.get('gender')
-        ClientRegister_Model.objects.create(username=username, email=email, password=password, phoneno=phoneno,
-                                            country=country, state=state, city=city,address=address,gender=gender)
-
-        obj = "Registered Successfully"
-        return render(request, 'RUser/Register1.html',{'object':obj})
-    else:
-        return render(request,'RUser/Register1.html')
-
-def ViewYourProfile(request):
-    userid = request.session['userid']
-    obj = ClientRegister_Model.objects.get(id= userid)
-    return render(request,'RUser/ViewYourProfile.html',{'object':obj})
+    ratio12 = ""
+    kword12 = 'No Cyber Threat Found'
+    print(kword12)
+    obj12 = cyber_threat_identification.objects.all().filter(Q(Prediction=kword12))
+    obj112 = cyber_threat_identification.objects.all()
+    count12 = obj12.count();
+    count112 = obj112.count();
+    ratio12 = (count12 / count112) * 100
+    if ratio12 != 0:
+        detection_ratio.objects.create(names=kword12, ratio=ratio12)
 
 
-def Predict_Cyber_Threat_Identification_Type(request):
-    if request.method == "POST":
+    obj = detection_ratio.objects.all()
+    return render(request, 'SProvider/View_Predicted_Cyber_Threat_Identification_Type_Ratio.html', {'objs': obj})
 
-        if request.method == "POST":
+def View_Remote_Users(request):
+    obj=ClientRegister_Model.objects.all()
+    return render(request,'SProvider/View_Remote_Users.html',{'objects':obj})
 
-            fid=request.POST.get('fid')
-            tweet_text=request.POST.get('tweet_text')
-            timestamp=request.POST.get('timestamp')
-            source=request.POST.get('source')
-            symbols=request.POST.get('symbols')
-            company_names=request.POST.get('company_names')
-            url=request.POST.get('url')
-            source_ip=request.POST.get('source_ip')
-            protocol=request.POST.get('protocol')
-            dest_ip=request.POST.get('dest_ip')
+def charts(request,chart_type):
+    chart1 = detection_ratio.objects.values('names').annotate(dcount=Avg('ratio'))
+    return render(request,"SProvider/charts.html", {'form':chart1, 'chart_type':chart_type})
 
+def charts1(request,chart_type):
+    chart1 = detection_accuracy.objects.values('names').annotate(dcount=Avg('ratio'))
+    return render(request,"SProvider/charts1.html", {'form':chart1, 'chart_type':chart_type})
 
-        df = pd.read_csv('Datasets.csv')
+def View_Predicted_Cyber_Threat_Identification_Type(request):
+    obj =cyber_threat_identification.objects.all()
+    return render(request, 'SProvider/View_Predicted_Cyber_Threat_Identification_Type.html', {'list_objects': obj})
 
-        # data under nlp
-        print("Data Processing Under Natural Language Processing (NLP)")
-        data = []
-        Labels = []
-        # Data Processing Under Natural Language Processing (NLP)
-        for row in df["tweet_text"]:
-            # tokenize words
-            words = word_tokenize(row)
-            # remove punctuations
-            clean_words = [word.lower() for word in words if word not in set(string.punctuation)]
-            # remove stop words
-            english_stops = set(stopwords.words('english'))
-            characters_to_remove = ["''", '``', "rt", "https", "â€™", "â€œ", "â€", "\u200b", "--", "n't", "'s",
-                                    "...",
-                                    "//t.c"]
-            clean_words = [word for word in clean_words if word not in english_stops]
-            clean_words = [word for word in clean_words if word not in set(characters_to_remove)]
-            # Lematise words
-            wordnet_lemmatizer = WordNetLemmatizer()
-            lemma_list = [wordnet_lemmatizer.lemmatize(word) for word in clean_words]
-            data.append(lemma_list)
-
-        def apply_results(label):
-            if (label == 0):
-                return 0  # No Threat Found
-            elif (label == 1):
-                return 1  # Threat Found
-
-        df['results'] = df['Label'].apply(apply_results)
-
-        X = df['tweet_text']
-        y = df['results']
-
-        print("Tweet Desc")
-        print(X)
-        print("Results")
-        print(y)
-
-        cv = CountVectorizer()
-        X = cv.fit_transform(X)
-
-        models = []
-        from sklearn.model_selection import train_test_split
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20)
-        X_train.shape, X_test.shape, y_train.shape
-
-        print("Naive Bayes")
-
-        from sklearn.naive_bayes import MultinomialNB
-
-        NB = MultinomialNB()
-        NB.fit(X_train, y_train)
-        predict_nb = NB.predict(X_test)
-        naivebayes = accuracy_score(y_test, predict_nb) * 100
-        print("ACCURACY")
-        print(naivebayes)
-        print("CLASSIFICATION REPORT")
-        print(classification_report(y_test, predict_nb))
-        print("CONFUSION MATRIX")
-        print(confusion_matrix(y_test, predict_nb))
-        models.append(('naive_bayes', NB))
-
-        # SVM Model
-        print("SVM")
-        from sklearn import svm
-
-        lin_clf = svm.LinearSVC()
-        lin_clf.fit(X_train, y_train)
-        predict_svm = lin_clf.predict(X_test)
-        svm_acc = accuracy_score(y_test, predict_svm) * 100
-        print("ACCURACY")
-        print(svm_acc)
-        print("CLASSIFICATION REPORT")
-        print(classification_report(y_test, predict_svm))
-        print("CONFUSION MATRIX")
-        print(confusion_matrix(y_test, predict_svm))
-        models.append(('svm', lin_clf))
-
-        print("Logistic Regression")
-
-        from sklearn.linear_model import LogisticRegression
-
-        reg = LogisticRegression(random_state=0, solver='lbfgs').fit(X_train, y_train)
-        y_pred = reg.predict(X_test)
-        print("ACCURACY")
-        print(accuracy_score(y_test, y_pred) * 100)
-        print("CLASSIFICATION REPORT")
-        print(classification_report(y_test, y_pred))
-        print("CONFUSION MATRIX")
-        print(confusion_matrix(y_test, y_pred))
-        models.append(('logistic', reg))
-
-        print("Decision Tree Classifier")
-        dtc = DecisionTreeClassifier()
-        dtc.fit(X_train, y_train)
-        dtcpredict = dtc.predict(X_test)
-        print("ACCURACY")
-        print(accuracy_score(y_test, dtcpredict) * 100)
-        print("CLASSIFICATION REPORT")
-        print(classification_report(y_test, dtcpredict))
-        print("CONFUSION MATRIX")
-        print(confusion_matrix(y_test, dtcpredict))
-        models.append(('DecisionTreeClassifier', dtc))
-
-        print("Convolutional Neural Network--CNN")
-        from sklearn.neural_network import MLPClassifier
-        mlpc = MLPClassifier().fit(X_train, y_train)
-        y_pred = mlpc.predict(X_test)
-        testscore_mlpc = accuracy_score(y_test, y_pred)
-        accuracy_score(y_test, y_pred)
-        print(accuracy_score(y_test, y_pred))
-        print(accuracy_score(y_test, y_pred) * 100)
-        print("CLASSIFICATION REPORT")
-        print(classification_report(y_test, y_pred))
-        print("CONFUSION MATRIX")
-        print(confusion_matrix(y_test, y_pred))
-        models.append(('MLPClassifier', mlpc))
-
-        classifier = VotingClassifier(models)
-        classifier.fit(X_train, y_train)
-        y_pred = classifier.predict(X_test)
-
-        tweet_text1 = [tweet_text]
-        vector1 = cv.transform(tweet_text1).toarray()
-        predict_text = classifier.predict(vector1)
-
-        pred = str(predict_text).replace("[", "")
-        pred1 = pred.replace("]", "")
-
-        prediction = int(pred1)
-
-        if (prediction == 0):
-            val = 'No Cyber Threat Found'
-        elif (prediction == 1):
-            val = 'Cyber Threat Found'
-
-        print(val)
-        print(pred1)
-
-        cyber_threat_identification.objects.create(
-        fid=fid,
-        tweet_text=tweet_text,
-        timestamp=timestamp,
-        source=source,
-        symbols=symbols,
-        company_names=company_names,
-        url=url,
-        source_ip=source_ip,
-        protocol=protocol,
-        dest_ip=dest_ip,
-        Prediction=val)
-
-        return render(request, 'RUser/Predict_Cyber_Threat_Identification_Type.html',{'objs': val})
-    return render(request, 'RUser/Predict_Cyber_Threat_Identification_Type.html')
+def likeschart(request,like_chart):
+    charts =detection_accuracy.objects.values('names').annotate(dcount=Avg('ratio'))
+    return render(request,"SProvider/likeschart.html", {'form':charts, 'like_chart':like_chart})
 
 
+def Download_Predicted_DataSets(request):
 
+    response = HttpResponse(content_type='application/ms-excel')
+    # decide file name
+    response['Content-Disposition'] = 'attachment; filename="Predicted_Datasets.xls"'
+    # creating workbook
+    wb = xlwt.Workbook(encoding='utf-8')
+    # adding sheet
+    ws = wb.add_sheet("sheet1")
+    # Sheet header, first row
+    row_num = 0
+    font_style = xlwt.XFStyle()
+    # headers are bold
+    font_style.font.bold = True
+    # writer = csv.writer(response)
+    obj = cyber_threat_identification.objects.all()
+    data = obj  # dummy method to fetch data.
+    for my_row in data:
+
+        row_num = row_num + 1
+
+        ws.write(row_num, 0, my_row.fid, font_style)
+        ws.write(row_num, 1, my_row.tweet_text, font_style)
+        ws.write(row_num, 2, my_row.timestamp, font_style)
+        ws.write(row_num, 3, my_row.source, font_style)
+        ws.write(row_num, 4, my_row.symbols, font_style)
+        ws.write(row_num, 5, my_row.company_names, font_style)
+        ws.write(row_num, 6, my_row.url, font_style)
+        ws.write(row_num, 7, my_row.source_ip, font_style)
+        ws.write(row_num, 8, my_row.protocol, font_style)
+        ws.write(row_num, 9, my_row.dest_ip, font_style)
+        ws.write(row_num, 10, my_row.Prediction, font_style)
+
+    wb.save(response)
+    return response
+
+def train_model(request):
+    detection_accuracy.objects.all().delete()
+
+    df = pd.read_csv('Datasets.csv',encoding='latin-1')
+
+    # data under nlp
+    print("Data Processing Under Natural Language Processing (NLP)")
+    data = []
+    Labels = []
+    # Data Processing Under Natural Language Processing (NLP)
+    for row in df["tweet_text"]:
+        # tokenize words
+        words = word_tokenize(row)
+        # remove punctuations
+        clean_words = [word.lower() for word in words if word not in set(string.punctuation)]
+        # remove stop words
+        english_stops = set(stopwords.words('english'))
+        characters_to_remove = ["''", '``', "rt", "https", "â€™", "â€œ", "â€", "\u200b", "--", "n't", "'s",
+                                "...",
+                                "//t.c"]
+        clean_words = [word for word in clean_words if word not in english_stops]
+        clean_words = [word for word in clean_words if word not in set(characters_to_remove)]
+        # Lematise words
+        wordnet_lemmatizer = WordNetLemmatizer()
+        lemma_list = [wordnet_lemmatizer.lemmatize(word) for word in clean_words]
+        data.append(lemma_list)
+
+    def apply_results(label):
+        if (label == 0):
+            return 0  # No Threat
+        elif (label == 1):
+            return 1  # Threat
+
+    df['results'] = df['Label'].apply(apply_results)
+
+    X = df['tweet_text']
+    y = df['results']
+
+    print("Tweet Desc")
+    print(X)
+    print("Results")
+    print(y)
+
+    cv = CountVectorizer()
+    X = cv.fit_transform(X)
+
+    models = []
+    from sklearn.model_selection import train_test_split
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20)
+    X_train.shape, X_test.shape, y_train.shape
+
+    print("Convolutional Neural Network--CNN")
+    from sklearn.neural_network import MLPClassifier
+    mlpc = MLPClassifier().fit(X_train, y_train)
+    y_pred = mlpc.predict(X_test)
+    testscore_mlpc = accuracy_score(y_test, y_pred)
+    accuracy_score(y_test, y_pred)
+    print(accuracy_score(y_test, y_pred))
+    print(accuracy_score(y_test, y_pred) * 100)
+    print("CLASSIFICATION REPORT")
+    print(classification_report(y_test, y_pred))
+    print("CONFUSION MATRIX")
+    print(confusion_matrix(y_test, y_pred))
+    models.append(('MLPClassifier', mlpc))
+    detection_accuracy.objects.create(names="Convolutional Neural Network--CNN",
+                                      ratio=accuracy_score(y_test, y_pred) * 100)
+
+    print("Extra Tree Classifier")
+    from sklearn.tree import ExtraTreeClassifier
+    etc_clf = ExtraTreeClassifier()
+    etc_clf.fit(X_train, y_train)
+    etcpredict = etc_clf.predict(X_test)
+    print("ACCURACY")
+    print(accuracy_score(y_test, etcpredict) * 100)
+    print("CLASSIFICATION REPORT")
+    print(classification_report(y_test, etcpredict))
+    print("CONFUSION MATRIX")
+    print(confusion_matrix(y_test, etcpredict))
+    models.append(('RandomForestClassifier', etc_clf))
+    detection_accuracy.objects.create(names="Extra Tree Classifier", ratio=accuracy_score(y_test, etcpredict) * 100)
+
+    # SVM Model
+    print("SVM")
+    from sklearn import svm
+    lin_clf = svm.LinearSVC()
+    lin_clf.fit(X_train, y_train)
+    predict_svm = lin_clf.predict(X_test)
+    svm_acc = accuracy_score(y_test, predict_svm) * 100
+    print(svm_acc)
+    print("CLASSIFICATION REPORT")
+    print(classification_report(y_test, predict_svm))
+    print("CONFUSION MATRIX")
+    print(confusion_matrix(y_test, predict_svm))
+    models.append(('svm', lin_clf))
+    detection_accuracy.objects.create(names="SVM", ratio=svm_acc)
+
+    print("Logistic Regression")
+
+    from sklearn.linear_model import LogisticRegression
+    reg = LogisticRegression(random_state=0, solver='lbfgs').fit(X_train, y_train)
+    y_pred = reg.predict(X_test)
+    print("ACCURACY")
+    print(accuracy_score(y_test, y_pred) * 100)
+    print("CLASSIFICATION REPORT")
+    print(classification_report(y_test, y_pred))
+    print("CONFUSION MATRIX")
+    print(confusion_matrix(y_test, y_pred))
+    models.append(('logistic', reg))
+    detection_accuracy.objects.create(names="Logistic Regression", ratio=accuracy_score(y_test, y_pred) * 100)
+
+
+    print("Gradient Boosting Classifier")
+
+    from sklearn.ensemble import GradientBoostingClassifier
+    clf = GradientBoostingClassifier(n_estimators=100, learning_rate=1.0, max_depth=1, random_state=0).fit(
+        X_train,
+        y_train)
+    clfpredict = clf.predict(X_test)
+    print("ACCURACY")
+    print(accuracy_score(y_test, clfpredict) * 100)
+    print("CLASSIFICATION REPORT")
+    print(classification_report(y_test, clfpredict))
+    print("CONFUSION MATRIX")
+    print(confusion_matrix(y_test, clfpredict))
+    models.append(('GradientBoostingClassifier', clf))
+    detection_accuracy.objects.create(names="Gradient Boosting Classifier",
+                                      ratio=accuracy_score(y_test, clfpredict) * 100)
+
+
+
+
+    csv_format = 'Results.csv'
+    df.to_csv(csv_format, index=False)
+    df.to_markdown
+
+    obj = detection_accuracy.objects.all()
+    return render(request,'SProvider/train_model.html', {'objs': obj})
