@@ -1,4 +1,5 @@
 Automated Emerging Cyber Threat Identification using NLP
+
 This project focuses on the intelligent identification and profiling of emerging cyber threats by analyzing unstructured textual data using Natural Language Processing (NLP). With the growing volume of cyber threat intelligence shared through articles, blogs, and reports, manual analysis becomes time-consuming and inefficient. This system automates the process, enabling faster and more accurate threat detection to support cybersecurity operations.
 
 Key Features:
